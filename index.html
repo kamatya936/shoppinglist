@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Beautiful Shopping Lists</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@400;700&display=swap');
+    body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #a8edea, #fed6e3); display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 30px 20px; }
+    .main-heading { font-family: 'Pacifico', cursive; font-weight: bold; font-size: 36px; color: #ff4b6e; margin-bottom: 20px; }
+    #listsContainer { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; width: 100%; }
+    .container { background: rgba(255,255,255,0.9); padding: 20px; border-radius: 15px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); width: 300px; margin-bottom: 25px; position: relative; display: flex; flex-direction: column; }
+    .list-header { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 10px; gap: 5px; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+    .date-time { font-size: 12px; color: gray; }
+    .input-area { display: flex; gap: 8px; margin-bottom: 15px; width: 100%; }
+    input[type=text] { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; }
+    button { padding: 10px 14px; border: none; border-radius: 8px; color: white; font-size: 15px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+    button:hover { transform: scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    .top-menu { display: flex; gap: 15px; margin-bottom: 25px; background: rgba(255,255,255,0.7); padding: 15px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); justify-content: center; }
+    .add-list-btn { font-weight: 600; padding: 10px 20px; border-radius: 10px; font-size: 16px; text-align: center; }
+    .add-new { background: #4CAF50; color: white; }
+    .clear-list { background: orange; color: white; }
+    .delete-history { background: red; color: white; }
+    .delete-btn { background: #ff4b6e; border-radius: 8px; padding: 6px 10px; }
+    .edit-btn { background: #4fa1f5; border-radius: 8px; padding: 6px 10px; }
+    a.add-list-btn { text-decoration: none; color: white; display: flex; align-items: center; justify-content: center; }
+    ul { list-style: none; padding: 0; margin: 0; width: 100%; }
+    li { background: #fff5f8; padding: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 8px; }
+    li.checked span { text-decoration: line-through; color: gray; }
+    span { flex: 1; font-size: 15px; color: #333; }
+  </style>
+</head>
+<body>
+  <div class="main-heading">Our Shopping List</div>
+
+  <div class="top-menu">
+    <button class="add-list-btn add-new" id="addListBtn">+ Add New List</button>
+    <button class="add-list-btn clear-list" id="clearAllListsBtn">Clear All Lists</button>
+    <a href="history.html" class="add-list-btn delete-history">View Delete History</a>
+  </div>
+
+  <div id="listsContainer"></div>
+
+  <script>
+    const listsContainer = document.getElementById('listsContainer');
+    const addListBtn = document.getElementById('addListBtn');
+    const clearAllListsBtn = document.getElementById('clearAllListsBtn');
+
+    function showConfirm(msg) { return confirm(msg); }
+
+    function saveToHistory(title, items){
+      const savedHistory = JSON.parse(localStorage.getItem('deletedLists') || '[]');
+      savedHistory.push({title, items, datetime: new Date().toLocaleString()});
+      localStorage.setItem('deletedLists', JSON.stringify(savedHistory));
+    }
+
+    function addItem(list, input){
+      const text = input.value.trim(); if(!text) return;
+      const li = document.createElement('li');
+      const checkbox = document.createElement('input'); checkbox.type='checkbox';
+      checkbox.addEventListener('change', () => li.classList.toggle('checked', checkbox.checked));
+      const span = document.createElement('span'); span.textContent=text;
+      const editBtn = document.createElement('button'); editBtn.textContent='✏️'; editBtn.className='edit-btn';
+      editBtn.addEventListener('click', () => { const newText = prompt('Edit item:', span.textContent); if(newText && newText.trim()!=='') span.textContent=newText.trim(); });
+      const delBtn = document.createElement('button'); delBtn.textContent='🗑️'; delBtn.className='delete-btn';
+      delBtn.addEventListener('click', () => {
+        if(showConfirm('Delete this item?')) {
+          const itemText = span.textContent;
+          li.remove();
+          saveToHistory('Deleted Item', [itemText]);
+        }
+      });
+      li.appendChild(checkbox); li.appendChild(span); li.appendChild(editBtn); li.appendChild(delBtn);
+      list.appendChild(li); input.value='';
+    }
+
+    function createList(){
+      const container = document.createElement('div');
+      container.className='container';
+
+      const header = document.createElement('div');
+      header.className='list-header';
+
+      const headerTop = document.createElement('div');
+      headerTop.className='header-top';
+      const heading = document.createElement('h1');
+      heading.contentEditable=true;
+      heading.textContent='Shopping List';
+      heading.addEventListener('input', () => { if(heading.textContent.length>25) heading.textContent=heading.textContent.slice(0,25); });
+
+      const delListBtn = document.createElement('button');
+      delListBtn.textContent='🗑️'; delListBtn.className='delete-btn';
+      delListBtn.addEventListener('click', () => {
+        if(showConfirm('Delete this entire list?')){
+          const items = Array.from(container.querySelectorAll('ul li span')).map(s=>s.textContent);
+          saveToHistory(heading.textContent, items);
+          container.remove();
+        }
+      });
+
+      headerTop.appendChild(heading);
+      headerTop.appendChild(delListBtn);
+
+      const dateTime = document.createElement('div');
+      dateTime.className='date-time';
+      dateTime.textContent = new Date().toLocaleString();
+
+      header.appendChild(headerTop);
+      header.appendChild(dateTime);
+
+      const inputArea = document.createElement('div'); inputArea.className='input-area';
+      const input = document.createElement('input'); input.type='text'; input.placeholder='Add an item...';
+      const addBtn = document.createElement('button'); addBtn.textContent='+'; addBtn.style.background='#4CAF50';
+      inputArea.appendChild(input); inputArea.appendChild(addBtn);
+
+      const list = document.createElement('ul');
+      addBtn.addEventListener('click', () => addItem(list,input));
+      input.addEventListener('keydown', e => { if(e.key==='Enter') addItem(list,input); });
+
+      container.appendChild(header); container.appendChild(inputArea); container.appendChild(list);
+      listsContainer.appendChild(container);
+    }
+
+    addListBtn.addEventListener('click', createList);
+
+    clearAllListsBtn.addEventListener('click', () => {
+      if(listsContainer.children.length === 0) return;
+      if(showConfirm('Are you sure you want to delete all shopping lists?')) {
+        [...listsContainer.children].forEach(container => {
+          const heading = container.querySelector('h1');
+          const items = Array.from(container.querySelectorAll('ul li span')).map(s=>s.textContent);
+          saveToHistory(heading.textContent, items);
+          container.remove();
+        });
+      }
+    });
+  </script>
+</body>
+</html>
