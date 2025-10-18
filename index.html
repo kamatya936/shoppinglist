@@ -14,113 +14,106 @@
     .input-area { display: flex; gap: 8px; margin-bottom: 15px; }
     input[type=text] { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; }
     button { padding: 10px 14px; border: none; border-radius: 8px; color: white; font-size: 15px; cursor: pointer; }
-    .add-list-btn { background: linear-gradient(135deg, #ff9a9e, #fad0c4); margin-bottom: 25px; font-weight: 600; }
+    .btn-group { display: flex; gap: 10px; margin-bottom: 25px; }
+    .add-list-btn { background: linear-gradient(135deg, #ff9a9e, #fad0c4); font-weight: 600; }
     .delete-btn { background: #ff4b6e; }
     .edit-btn { background: #4fa1f5; }
     ul { list-style: none; padding: 0; margin: 0; }
     li { background: #fff5f8; padding: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 8px; }
     li.checked span { text-decoration: line-through; color: gray; }
     span { flex: 1; font-size: 15px; color: #333; }
-    .history-container { position: fixed; left: 20px; bottom: 20px; width: 300px; background: rgba(0,0,0,0.85); padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); color: #fff; font-family: 'Poppins', sans-serif; }
-    .history-container button { background: #ff4b6e; color: white; margin-bottom: 10px; width: 100%; cursor: pointer; }
-    .history-title { font-size: 18px; margin-bottom: 10px; color: #fff; font-weight: 600; }
-    .history-item { background: #ff4b6e; padding: 10px; border-radius: 8px; margin-bottom: 8px; position: relative; display: flex; flex-direction: column; gap: 5px; color: #fff; }
-    .history-item button { align-self: flex-end; background: #333; padding: 2px 6px; border-radius: 4px; font-size: 12px; cursor: pointer; border: none; color: white; }
   </style>
 </head>
 <body>
   <h1>Our Shopping List</h1>
-  <button class="add-list-btn" id="addListBtn">+ Add New List</button>
-  <div id="listsContainer"></div>
-  <div class="history-container">
-    <button id="clearHistoryBtn">Clear Delete History</button>
-    <div class="history-title">Deleted Lists History</div>
-    <div id="historyList"></div>
+  <div class="btn-group">
+    <button class="add-list-btn" id="addListBtn">+ Add New List</button>
+    <button class="add-list-btn" id="clearAllListsBtn" style="background: #f56a6a;">Clear All Lists</button>
+    <a href="history.html" class="add-list-btn" style="background: #4fa1f5; text-decoration:none; display:flex; align-items:center; justify-content:center;">View Delete History</a>
   </div>
+  <div id="listsContainer"></div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const listsContainer = document.getElementById('listsContainer');
-      const historyList = document.getElementById('historyList');
-      const addListBtn = document.getElementById('addListBtn');
-      const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+    const listsContainer = document.getElementById('listsContainer');
+    const addListBtn = document.getElementById('addListBtn');
+    const clearAllListsBtn = document.getElementById('clearAllListsBtn');
 
-      function showConfirm(msg) { return confirm(msg); }
+    function showConfirm(msg) { return confirm(msg); }
 
-      function addToHistory(title, items) {
-        const div = document.createElement('div');
-        div.className = 'history-item';
-        const titleSpan = document.createElement('span');
-        titleSpan.textContent = `🗑️ ${title}`;
-        div.appendChild(titleSpan);
-        if(items.length > 0){
-          const itemSpan = document.createElement('span');
-          itemSpan.textContent = 'Items: ' + items.join(', ');
-          div.appendChild(itemSpan);
-        }
-        const delBtn = document.createElement('button');
-        delBtn.textContent = 'Delete';
-        delBtn.addEventListener('click', () => { if(showConfirm('Delete this history item?')) div.remove(); });
-        div.appendChild(delBtn);
-        historyList.appendChild(div);
-      }
+    function saveToHistory(title, items){
+      const savedHistory = JSON.parse(localStorage.getItem('deletedLists') || '[]');
+      savedHistory.push({title, items});
+      localStorage.setItem('deletedLists', JSON.stringify(savedHistory));
+    }
 
-      function addItem(list, input){
-        const text = input.value.trim(); if(!text) return;
-        const li = document.createElement('li');
-        const checkbox = document.createElement('input'); checkbox.type='checkbox';
-        checkbox.addEventListener('change', () => li.classList.toggle('checked', checkbox.checked));
-        const span = document.createElement('span'); span.textContent=text;
-        const editBtn = document.createElement('button'); editBtn.textContent='✏️'; editBtn.className='edit-btn';
-        editBtn.addEventListener('click', () => { const newText = prompt('Edit item:', span.textContent); if(newText && newText.trim()!=='') span.textContent=newText.trim(); });
-        const delBtn = document.createElement('button'); delBtn.textContent='🗑️'; delBtn.className='delete-btn';
-        delBtn.addEventListener('click', () => { if(showConfirm('Delete this item?')) li.remove(); });
-        li.appendChild(checkbox); li.appendChild(span); li.appendChild(editBtn); li.appendChild(delBtn);
-        list.appendChild(li); input.value='';
-      }
-
-      function createList(){
-        const container = document.createElement('div');
-        container.className='container';
-        const header = document.createElement('div');
-        header.className='list-header';
-        const heading = document.createElement('h1');
-        heading.contentEditable=true;
-        heading.textContent='Shopping List';
-        heading.addEventListener('input', () => { if(heading.textContent.length>25) heading.textContent=heading.textContent.slice(0,25); });
-
-        const delListBtn = document.createElement('button');
-        delListBtn.textContent='🗑️'; delListBtn.className='delete-btn';
-        delListBtn.addEventListener('click', () => {
-          if(showConfirm('Delete this entire list?')){
-            const items = Array.from(container.querySelectorAll('ul li span')).map(s=>s.textContent);
-            addToHistory(heading.textContent, items);
-            container.remove();
-          }
-        });
-
-        header.appendChild(heading);
-        header.appendChild(delListBtn);
-
-        const inputArea = document.createElement('div'); inputArea.className='input-area';
-        const input = document.createElement('input'); input.type='text'; input.placeholder='Add an item...';
-        const addBtn = document.createElement('button'); addBtn.textContent='+'; addBtn.style.background='#4CAF50';
-        inputArea.appendChild(input); inputArea.appendChild(addBtn);
-
-        const list = document.createElement('ul');
-        addBtn.addEventListener('click', () => addItem(list,input));
-        input.addEventListener('keydown', e => { if(e.key==='Enter') addItem(list,input); });
-
-        container.appendChild(header); container.appendChild(inputArea); container.appendChild(list);
-        listsContainer.appendChild(container);
-      }
-
-      addListBtn.addEventListener('click', createList);
-      clearHistoryBtn.addEventListener('click', () => {
-        if(showConfirm('Are you sure you want to clear all delete history?')) {
-          while(historyList.firstChild) { historyList.removeChild(historyList.firstChild); }
+    function addItem(list, input){
+      const text = input.value.trim(); if(!text) return;
+      const li = document.createElement('li');
+      const checkbox = document.createElement('input'); checkbox.type='checkbox';
+      checkbox.addEventListener('change', () => li.classList.toggle('checked', checkbox.checked));
+      const span = document.createElement('span'); span.textContent=text;
+      const editBtn = document.createElement('button'); editBtn.textContent='✏️'; editBtn.className='edit-btn';
+      editBtn.addEventListener('click', () => { const newText = prompt('Edit item:', span.textContent); if(newText && newText.trim()!=='') span.textContent=newText.trim(); });
+      const delBtn = document.createElement('button'); delBtn.textContent='🗑️'; delBtn.className='delete-btn';
+      delBtn.addEventListener('click', () => {
+        if(showConfirm('Delete this item?')) {
+          const itemText = span.textContent;
+          li.remove();
+          saveToHistory('Deleted Item', [itemText]);
         }
       });
+      li.appendChild(checkbox); li.appendChild(span); li.appendChild(editBtn); li.appendChild(delBtn);
+      list.appendChild(li); input.value='';
+    }
+
+    function createList(){
+      const container = document.createElement('div');
+      container.className='container';
+      const header = document.createElement('div');
+      header.className='list-header';
+      const heading = document.createElement('h1');
+      heading.contentEditable=true;
+      heading.textContent='Shopping List';
+      heading.addEventListener('input', () => { if(heading.textContent.length>25) heading.textContent=heading.textContent.slice(0,25); });
+
+      const delListBtn = document.createElement('button');
+      delListBtn.textContent='🗑️'; delListBtn.className='delete-btn';
+      delListBtn.addEventListener('click', () => {
+        if(showConfirm('Delete this entire list?')){
+          const items = Array.from(container.querySelectorAll('ul li span')).map(s=>s.textContent);
+          saveToHistory(heading.textContent, items);
+          container.remove();
+        }
+      });
+
+      header.appendChild(heading);
+      header.appendChild(delListBtn);
+
+      const inputArea = document.createElement('div'); inputArea.className='input-area';
+      const input = document.createElement('input'); input.type='text'; input.placeholder='Add an item...';
+      const addBtn = document.createElement('button'); addBtn.textContent='+'; addBtn.style.background='#4CAF50';
+      inputArea.appendChild(input); inputArea.appendChild(addBtn);
+
+      const list = document.createElement('ul');
+      addBtn.addEventListener('click', () => addItem(list,input));
+      input.addEventListener('keydown', e => { if(e.key==='Enter') addItem(list,input); });
+
+      container.appendChild(header); container.appendChild(inputArea); container.appendChild(list);
+      listsContainer.appendChild(container);
+    }
+
+    addListBtn.addEventListener('click', createList);
+
+    clearAllListsBtn.addEventListener('click', () => {
+      if(listsContainer.children.length === 0) return;
+      if(showConfirm('Are you sure you want to delete all shopping lists?')) {
+        [...listsContainer.children].forEach(container => {
+          const heading = container.querySelector('h1');
+          const items = Array.from(container.querySelectorAll('ul li span')).map(s=>s.textContent);
+          saveToHistory(heading.textContent, items);
+          container.remove();
+        });
+      }
     });
   </script>
 </body>
