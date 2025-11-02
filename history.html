@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Deleted Lists History</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@400;700&display=swap');
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #a8edea, #fed6e3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 30px 20px;
+      position: relative;
+    }
+
+    /* Background Watermark Text */
+    body::before {
+      content: "Shopping List";
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-25deg);
+      font-size: 100px;
+      font-weight: 700;
+      color: rgba(255, 75, 110, 0.08);
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 0;
+    }
+
+    h1 {
+      font-family: 'Pacifico', cursive;
+      color: #ff4b6e;
+      font-size: 34px;
+      margin-bottom: 20px;
+      z-index: 1;
+    }
+
+    .top-menu {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 25px;
+      background: rgba(255,255,255,0.7);
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      justify-content: center;
+      flex-wrap: wrap;
+      z-index: 1;
+    }
+
+    button {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 15px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    button:hover { transform: scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+
+    .clear-history { background: red; }
+    .back-btn { background: #4fa1f5; }
+
+    .history-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+      width: 100%;
+      z-index: 1;
+    }
+
+    .history-card {
+      background: rgba(255,255,255,0.9);
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      width: 300px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .history-card h2 {
+      margin: 0;
+      color: #ff4b6e;
+      font-size: 20px;
+    }
+
+    .datetime {
+      font-size: 12px;
+      color: gray;
+      margin-bottom: 5px;
+    }
+
+    ul { list-style: none; padding: 0; margin: 0; }
+    li {
+      background: #fff5f8;
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: #333;
+    }
+
+    .restore-btn {
+      background: #4CAF50;
+      color: white;
+      align-self: flex-start;
+      margin-top: 10px;
+    }
+
+    .trademark {
+      position: fixed;
+      bottom: 10px;
+      right: 15px;
+      font-size: 13px;
+      color: rgba(0, 0, 0, 0.6);
+      font-style: italic;
+      z-index: 2;
+      user-select: none;
+    }
+
+    @media (max-width: 480px) {
+      .top-menu { flex-direction: column; align-items: center; }
+      .trademark { font-size: 12px; right: 10px; bottom: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Deleted Lists History</h1>
+
+  <div class="top-menu">
+    <button class="back-btn" onclick="window.location.href='index.html'">← Back to Main Page</button>
+    <button class="clear-history" id="clearHistoryBtn">Clear All History</button>
+  </div>
+
+  <div id="historyContainer" class="history-container"></div>
+
+  <div class="trademark">© Developed by Kamatya</div>
+
+  <script>
+    const historyContainer = document.getElementById('historyContainer');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+    function loadHistory() {
+      const historyData = JSON.parse(localStorage.getItem('deletedLists') || '[]');
+      historyContainer.innerHTML = '';
+
+      if (historyData.length === 0) {
+        historyContainer.innerHTML = '<p style="color:gray;font-size:16px;">No deleted lists or items yet.</p>';
+        return;
+      }
+
+      historyData.forEach((entry, index) => {
+        const card = document.createElement('div');
+        card.className = 'history-card';
+
+        const title = document.createElement('h2');
+        title.textContent = entry.title;
+
+        const datetime = document.createElement('div');
+        datetime.className = 'datetime';
+        datetime.textContent = entry.datetime || '';
+
+        const ul = document.createElement('ul');
+        entry.items.forEach(item => {
+          const li = document.createElement('li');
+          li.textContent = item;
+          ul.appendChild(li);
+        });
+
+        const restoreBtn = document.createElement('button');
+        restoreBtn.className = 'restore-btn';
+        restoreBtn.textContent = 'Restore to Main List';
+        restoreBtn.addEventListener('click', () => {
+          restoreToActive(entry);
+          historyData.splice(index, 1);
+          localStorage.setItem('deletedLists', JSON.stringify(historyData));
+          loadHistory();
+        });
+
+        card.appendChild(title);
+        card.appendChild(datetime);
+        card.appendChild(ul);
+        card.appendChild(restoreBtn);
+        historyContainer.appendChild(card);
+      });
+    }
+
+    function restoreToActive(entry) {
+      const activeLists = JSON.parse(localStorage.getItem('activeLists') || '[]');
+      activeLists.push({ title: entry.title, items: entry.items.map(i => i.replace(/\s*\(deleted on .*\)/, '')) });
+      localStorage.setItem('activeLists', JSON.stringify(activeLists));
+      alert(`"${entry.title}" has been restored to your main shopping list.`);
+    }
+
+    clearHistoryBtn.addEventListener('click', () => {
+      if (confirm('Are you sure you want to clear all deleted history?')) {
+        localStorage.removeItem('deletedLists');
+        loadHistory();
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', loadHistory);
+  </script>
+</body>
+</html>
