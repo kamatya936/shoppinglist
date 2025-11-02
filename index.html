@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Beautiful Shopping Lists</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@400;700&display=swap');
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #a8edea, #fed6e3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  padding: 30px 20px;
+  position: relative;
+}
+body::before {
+  content: "Shopping List";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-25deg);
+  font-size: 100px;
+  font-weight: 700;
+  color: rgba(255, 75, 110, 0.08);
+  pointer-events: none;
+  z-index: 0;
+  white-space: nowrap;
+}
+.main-heading {
+  font-family: 'Pacifico', cursive;
+  font-weight: bold;
+  font-size: 36px;
+  color: #ff4b6e;
+  margin-bottom: 20px;
+  z-index: 1;
+}
+#listsContainer { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; width: 100%; }
+.container { background: rgba(255,255,255,0.9); padding: 20px; border-radius: 15px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); width: 300px; margin-bottom: 25px; position: relative; display: flex; flex-direction: column; cursor: grab; }
+.container.dragging { opacity: 0.6; }
+.list-header { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 10px; gap: 5px; }
+.header-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+.date-time { font-size: 12px; color: gray; }
+.input-area { display: flex; gap: 8px; margin-bottom: 15px; width: 100%; }
+input[type=text] { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; }
+button { padding: 10px 14px; border: none; border-radius: 8px; color: white; font-size: 15px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+button:hover { transform: scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+.top-menu { display: flex; gap: 15px; margin-bottom: 25px; background: rgba(255,255,255,0.7); padding: 15px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); justify-content: center; flex-wrap: wrap; z-index:1;}
+.add-list-btn { font-weight: 600; padding: 10px 20px; border-radius: 10px; font-size: 16px; text-align: center; }
+.add-new { background: #4CAF50; color: white; }
+.clear-list { background: orange; color: white; }
+.delete-history { background: red; color: white; }
+.compare-btn { background: #4fa1f5; color: white; }
+.delete-btn { background: #ff4b6e; border-radius: 8px; padding: 6px 10px; }
+.edit-btn { background: #4fa1f5; border-radius: 8px; padding: 6px 10px; }
+.share-btn { background: #4CAF50; border-radius: 50%; width:32px; height:32px; display:flex; justify-content:center; align-items:center; font-size:16px; padding:0; border:none; cursor:pointer; }
+ul { list-style: none; padding: 0; margin: 0; width: 100%; }
+li { background: #fff5f8; padding: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 8px; }
+li.checked span { text-decoration: line-through; color: gray; }
+span { flex: 1; font-size: 15px; color: #333; }
+.search-bar { width: 100%; max-width: 400px; margin-bottom: 20px; display: flex; }
+.search-bar input { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 15px; }
+.compare-links { display:none; margin-bottom:20px; text-align:center; }
+.compare-links a { margin:0 5px; text-decoration:none; color:#333; font-weight:600; }
+.trademark { position: fixed; bottom: 10px; right: 15px; font-size: 13px; color: rgba(0,0,0,0.6); font-style: italic; z-index: 2; }
+.menu-btn { position: fixed; top: 20px; left: 20px; background: #ff4b6e; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; font-size: 22px; cursor: pointer; z-index: 3; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+.sidebar { position: fixed; top: 0; left: -260px; width: 240px; height: 100%; background: white; box-shadow: 4px 0 10px rgba(0,0,0,0.2); transition: left 0.3s ease; z-index: 4; padding: 25px; display: flex; flex-direction: column; gap: 20px; }
+.sidebar.open { left:0; }
+.sidebar a { text-decoration: none; color: #333; font-weight: 600; cursor: pointer; }
+.about-box, .feedback-box { display:none; position: fixed; top:50%; left:50%; transform:translate(-50%,-50%); background: rgba(255,255,255,0.97); padding:20px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.15); width:90%; max-width:400px; z-index:5; }
+.close-btn { background: red; border: none; color:white; padding:3px 7px; border-radius:6px; float:right; cursor:pointer; font-size:14px; }
+.feedback-box input, .feedback-box textarea { width:100%; padding:8px; margin-bottom:10px; border-radius:6px; border:1px solid #ccc; font-size:14px; }
+.feedback-box button { background: #4fa1f5; color:white; border:none; border-radius:6px; padding:8px 12px; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<button class="menu-btn" onclick="toggleMenu()">☰</button>
+<div class="sidebar" id="sidebar">
+  <button class="close-btn" onclick="toggleMenu()">X</button>
+  <a onclick="showAbout()">About</a>
+  <a onclick="showFeedback()">Feedback</a>
+</div>
+
+<div class="main-heading">Our Shopping List</div>
+
+<div class="search-bar">
+  <input type="text" id="searchInput" placeholder="Search items...">
+</div>
+
+<div class="top-menu">
+  <button class="add-list-btn add-new" id="addListBtn">+ Add New List</button>
+  <button class="add-list-btn clear-list" id="clearAllListsBtn">Clear All Lists</button>
+  <a href="history.html" class="add-list-btn delete-history">View Delete History</a>
+  <button class="add-list-btn compare-btn" id="compareBtn">Compare</button>
+</div>
+
+<div class="compare-links" id="compareLinks">
+  <a href="https://www.amazon.com" target="_blank">Amazon</a>
+  <a href="https://www.argos.co.uk" target="_blank">Argos</a>
+  <a href="https://www.asda.com" target="_blank">Asda</a>
+  <a href="https://www.morrisons.com" target="_blank">Morrison</a>
+  <a href="https://www.lidl.com" target="_blank">Lidl</a>
+  <a href="https://www.aldi.co.uk" target="_blank">Aldi</a>
+  <a href="https://www.sainsburys.co.uk" target="_blank">Sainsbury</a>
+</div>
+
+<div id="listsContainer"></div>
+
+<div class="about-box" id="aboutBox">
+  <button class="close-btn" onclick="closeBox('aboutBox')">X</button>
+  <h2>About This Page</h2>
+  <p>This shopping list app lets you manage, search, share, and rearrange your shopping lists easily. Developed by Kamatya.</p>
+</div>
+
+<div class="feedback-box" id="feedbackBox">
+  <button class="close-btn" onclick="closeBox('feedbackBox')">X</button>
+  <h2>Feedback</h2>
+  <form id="feedbackForm" onsubmit="sendFeedback(event)">
+    <input type="text" id="name" placeholder="Your Name" required>
+    <input type="email" id="email" placeholder="Email Address" required>
+    <textarea id="comment" rows="4" placeholder="Your Feedback..." required></textarea>
+    <button type="submit">Send</button>
+  </form>
+</div>
+
+<div class="trademark">© Developed by Kamatya</div>
+
+<script>
+// Sidebar
+function toggleMenu(){ document.getElementById('sidebar').classList.toggle('open'); }
+function showAbout(){ document.getElementById('aboutBox').style.display='block'; }
+function showFeedback(){ document.getElementById('feedbackBox').style.display='block'; }
+function closeBox(id){ document.getElementById(id).style.display='none'; }
+function sendFeedback(e){ e.preventDefault(); alert('Thank you for your feedback!'); closeBox('feedbackBox'); }
+
+// Compare toggle
+document.getElementById('compareBtn').addEventListener('click', ()=> {
+  const links = document.getElementById('compareLinks');
+  links.style.display = links.style.display==='flex'?'none':'flex';
+});
+
+// Shopping List JS
+const listsContainer = document.getElementById('listsContainer');
+const addListBtn = document.getElementById('addListBtn');
+const clearAllListsBtn = document.getElementById('clearAllListsBtn');
+const searchInput = document.getElementById('searchInput');
+
+function showConfirm(msg){ return confirm(msg); }
+
+function saveToHistory(title, items){
+  const savedHistory = JSON.parse(localStorage.getItem('deletedLists')||'[]');
+  savedHistory.push({title, items, datetime: new Date().toLocaleString()});
+  localStorage.setItem('deletedLists', JSON.stringify(savedHistory));
+}
+
+function saveActiveLists(){
+  const listsData = [...listsContainer.children].map(container=>({
+    title: container.querySelector('h1').textContent,
+    items: [...container.querySelectorAll('ul li span')].map(s=>s.textContent)
+  }));
+  localStorage.setItem('activeLists', JSON.stringify(listsData));
+}
+
+function loadActiveLists(){
+  const saved = JSON.parse(localStorage.getItem('activeLists')||'[]');
+  saved.forEach(listData=>{
+    const container=createList(false);
+    listsContainer.appendChild(container);
+    const heading=container.querySelector('h1');
+    heading.textContent=listData.title;
+    const ul=container.querySelector('ul');
+    listData.items.forEach(text=>addItem(ul,null,text));
+  });
+}
+
+function addItem(list,input,prefillText=null){
+  const text=prefillText!==null?prefillText:input.value.trim();
+  if(!text) return;
+  const li=document.createElement('li');
+  const checkbox=document.createElement('input'); checkbox.type='checkbox';
+  checkbox.addEventListener('change', ()=> li.classList.toggle('checked', checkbox.checked));
+  const span=document.createElement('span'); span.textContent=text;
+
+  const editBtn=document.createElement('button'); editBtn.textContent='✏️'; editBtn.className='edit-btn';
+  editBtn.addEventListener('click', ()=>{
+    const newText=prompt('Edit item:', span.textContent);
+    if(newText && newText.trim()!=='') span.textContent=newText.trim();
+    saveActiveLists(); filterItems();
+  });
+
+  const delBtn=document.createElement('button'); delBtn.textContent='🗑️'; delBtn.className='delete-btn';
+  delBtn.addEventListener('click', ()=>{
+    if(showConfirm('Delete this item?')){
+      const itemText=span.textContent;
+      saveToHistory('Deleted Item',[itemText]);
+      li.remove();
+      saveActiveLists();
+    }
+  });
+
+  const shareBtn=document.createElement('button'); shareBtn.innerHTML='📤'; shareBtn.className='share-btn';
+  shareBtn.addEventListener('click', ()=>{
+    const items=[...list.querySelectorAll('li span')].map(s=>s.textContent);
+    const text=`${list.parentElement.querySelector('h1').textContent}\n- ${items.join('\n- ')}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  });
+
+  li.append(checkbox, span, editBtn, delBtn);
+  list.appendChild(li);
+  if(!prefillText && input) input.value='';
+  saveActiveLists(); filterItems();
+}
+
+function createList(autoAppend=true){
+  const container=document.createElement('div'); container.className='container'; container.draggable=true;
+  const header=document.createElement('div'); header.className='list-header';
+  const headerTop=document.createElement('div'); headerTop.className='header-top';
+  const heading=document.createElement('h1'); heading.contentEditable=true; heading.textContent='Shopping List';
+  heading.addEventListener('input', ()=>{ if(heading.textContent.length>25) heading.textContent=heading.textContent.slice(0,25); saveActiveLists(); });
+
+  const delListBtn=document.createElement('button'); delListBtn.textContent='🗑️'; delListBtn.className='delete-btn';
+  delListBtn.addEventListener('click', ()=>{
+    if(showConfirm('Delete this entire list?')){
+      const items=[...container.querySelectorAll('ul li span')].map(s=>s.textContent);
+      saveToHistory(heading.textContent, items); container.remove(); saveActiveLists();
+    }
+  });
+
+  const shareBtn=document.createElement('button'); shareBtn.innerHTML='📤'; shareBtn.className='share-btn';
+  shareBtn.addEventListener('click', ()=>{
+    const items=[...container.querySelectorAll('ul li span')].map(s=>s.textContent);
+    const text=`${heading.textContent}\n- ${items.join('\n- ')}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  });
+
+  headerTop.append(heading, delListBtn, shareBtn);
+  const dateTime=document.createElement('div'); dateTime.className='date-time';
+  dateTime.textContent=new Date().toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});
+  header.append(headerTop,dateTime);
+
+  const inputArea=document.createElement('div'); inputArea.className='input-area';
+  const input=document.createElement('input'); input.type='text'; input.placeholder='Add an item...';
+  const addBtn=document.createElement('button'); addBtn.textContent='+'; addBtn.style.background='#4CAF50';
+  inputArea.append(input, addBtn);
+
+  const list=document.createElement('ul');
+  addBtn.addEventListener('click', ()=>addItem(list,input));
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') addItem(list,input); });
+
+  container.append(header, inputArea, list);
+  if(autoAppend) listsContainer.appendChild(container);
+
+  container.addEventListener('dragstart', e=>{ container.classList.add('dragging'); });
+  container.addEventListener('dragend', e=>{ container.classList.remove('dragging'); saveOrder(); });
+
+  return container;
+}
+
+addListBtn.addEventListener('click', ()=>createList(true));
+
+clearAllListsBtn.addEventListener('click', ()=>{
+  if(listsContainer.children.length===0) return;
+  if(showConfirm('Are you sure you want to delete all shopping lists?')){
+    [...listsContainer.children].forEach(container=>{
+      const heading=container.querySelector('h1');
+      const items=[...container.querySelectorAll('ul li span')].map(s=>s.textContent);
+      saveToHistory(heading.textContent, items); container.remove();
+    });
+    saveActiveLists();
+  }
+});
+
+function filterItems(){
+  const query=searchInput.value.toLowerCase();
+  [...listsContainer.querySelectorAll('ul li')].forEach(li=>{
+    const text=li.querySelector('span').textContent.toLowerCase();
+    li.style.display=text.includes(query)?'flex':'none';
+  });
+}
+searchInput.addEventListener('input', filterItems);
+
+function saveOrder(){
+  const listsData=[...listsContainer.children].map(container=>({
+    title: container.querySelector('h1').textContent,
+    items:[...container.querySelectorAll('ul li span')].map(s=>s.textContent)
+  }));
+  localStorage.setItem('activeLists', JSON.stringify(listsData));
+}
+
+listsContainer.addEventListener('dragover', e=>{
+  e.preventDefault();
+  const afterElement=getDragAfterElement(listsContainer,e.clientY);
+  const draggable=document.querySelector('.dragging');
+  if(afterElement==null) listsContainer.appendChild(draggable);
+  else listsContainer.insertBefore(draggable, afterElement);
+});
+
+function getDragAfterElement(container,y){
+  const draggableElements=[...container.querySelectorAll('.container:not(.dragging)')];
+  return draggableElements.reduce((closest,child)=>{
+    const box=child.getBoundingClientRect();
+    const offset=y-box.top-box.height/2;
+    if(offset<0 && offset>closest.offset) return {offset:offset, element:child};
+    else return closest;
+  },{offset:Number.NEGATIVE_INFINITY}).element;
+}
+
+window.addEventListener('DOMContentLoaded', loadActiveLists);
+window.addEventListener('beforeunload', saveActiveLists);
+</script>
+</body>
+</html>
